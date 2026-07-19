@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Build output
+bin/
+*.exe
+
+# IDE and local config
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Test and coverage
+*.test
+coverage.out
+*.out
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+*.md
+
+# Misc
+tmp/
+temp/
+log/

@@ -1,0 +1,201 @@
+openapi: 3.0.3
+info:
+  title: Email Service API
+  description: API for sending emails and health checks
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns service health status
+      operationId: getHealth
+      tags:
+        - Health
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                    example: email
+                  status:
+                    type: string
+                    example: ok
+                required:
+                  - service
+                  - status
+
+  /emails/send:
+    post:
+      summary: Send email (template-based)
+      description: |
+        Send an email using a template. Requires receiver_email, template, and subject.
+        Trace ID can be provided in body or X-Trace-ID header.
+      operationId: sendEmail
+      tags:
+        - Email
+      parameters:
+        - name: X-Trace-ID
+          in: header
+          description: Optional trace ID for request tracking (generated if not provided)
+          required: false
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendEmailRequest"
+      responses:
+        "200":
+          description: Email processed successfully
+          headers:
+            X-Trace-ID:
+              description: Trace ID for the request
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Email processed successfully
+        "400":
+          description: Invalid request or missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /send-email:
+    post:
+      summary: Send email (raw)
+      description: Send an email with raw body, recipient, and subject. Requires body, recipient, and subject.
+      operationId: sendEmailRaw
+      tags:
+        - Email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailRequest"
+      responses:
+        "200":
+          description: Email sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Email sent successfully
+        "400":
+          description: Invalid request or missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Failed to send email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    Attachment:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+
+    SendEmailRequest:
+      type: object
+      required:
+        - receiver_email
+        - template
+        - subject
+      properties:
+        trace_id:
+          type: string
+          description: Optional trace ID (or use X-Trace-ID header)
+        tenant_id:
+          type: integer
+          format: int64
+        service_id:
+          type: integer
+          format: int64
+        receiver_email:
+          type: string
+          format: email
+        template:
+          type: string
+        subject:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        attachments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attachment"
+
+    EmailRequest:
+      type: object
+      required:
+        - body
+        - recipient
+        - subject
+      properties:
+        body:
+          type: string
+        recipient:
+          type: string
+          format: email
+        subject:
+          type: string
+        recovery_code:
+          type: string
+        recovery_url:
+          type: string
+          format: uri
+        template_type:
+          type: string
+        to:
+          type: string
+        verification_code:
+          type: string
+        verification_url:
+          type: string
+          format: uri
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
